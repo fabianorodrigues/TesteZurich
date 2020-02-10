@@ -20,7 +20,7 @@ namespace Domain.Queries
 
         }
 
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
         public decimal Valor { get; set; }
 

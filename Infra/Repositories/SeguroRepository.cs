@@ -3,7 +3,8 @@ using Domain.Entities;
 using Domain.Queries;
 using Domain.Repositories;
 using Microsoft.Extensions.Configuration;
-using System;
+using Oracle.ManagedDataAccess.Client;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 
@@ -18,26 +19,34 @@ namespace Infra.Repositories
             _configuration = configuration;
         }
 
-        public string GetConnection()
+        public OracleConnection GetConnection()
         {
-            var connection = _configuration.GetSection("ConnectionStrings").
-            GetSection("DefaultConnection").Value;
-            return connection;
+            var connectionString = _configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value;
+            var conn = new OracleConnection(connectionString);
+            return conn;
         }
 
         public void Incluir(Seguro seguro)
         {
-            var connectionString = this.GetConnection();
             var seguroQueryResult = new SeguroQueryResult(seguro);
 
-            using (var con = new SqlConnection(connectionString))
+            using (var con = this.GetConnection())
             {
                 try
                 {
                     con.Open();
-                    var query = @"INSERT INTO Seguro(Id, Valor, CPF, ValorVeiculo, Marca, Modelo) 
-                                VALUES(@Id, @Valor, @CPF, @ValorVeiculo, @Marca, @Modelo);";
-                    con.Execute(query, seguroQueryResult);
+                    con.Execute(@"INSERT INTO TB_SEGURO (ID, VALOR, CPF, VALOR_VEICULO, MARCA, MODELO) 
+                                VALUES (:ID, :VALOR, :CPF_SEGURADO, :VALOR_VEICULO, :MARCA, :MODELO)",
+                        new
+                        {
+                            ID = seguroQueryResult.Id,
+                            VALOR = seguroQueryResult.Valor,
+                            CPF_SEGURADO = seguroQueryResult.CPF,
+                            VALOR_VEICULO = seguroQueryResult.ValorVeiculo,
+                            MARCA = seguroQueryResult.Marca,
+                            MODELO = seguroQueryResult.Modelo
+
+                        });
                 }
                 finally
                 {
@@ -48,14 +57,12 @@ namespace Infra.Repositories
 
         public SeguroQueryResult Buscar(string CPF)
         {
-            var connectionString = this.GetConnection();
-
-            using (var con = new SqlConnection(connectionString))
+            using (var con = this.GetConnection())
             {
                 try
                 {
                     con.Open();
-                    var query = $"SELECT Id, Valor, CPF, ValorVeiculo, Marca, Modelo FROM Seguro WHERE CPF = {CPF}";
+                    var query = $"SELECT ID, VALOR, CPF, VALOR_VEICULO AS VALORVEICULO, MARCA, MODELO FROM TB_SEGURO WHERE CPF = {CPF}";
                     return con.Query<SeguroQueryResult>(query).FirstOrDefault();
                 }
                 finally

@@ -7,9 +7,9 @@ namespace Domain.Entities
     {
         public Base()
         {
-            Id = Guid.NewGuid();
+            Id = new Random().Next(1, int.MaxValue);
         }
 
-        public Guid Id { get; private set; }
+        public int Id { get; private set; }
     }
 }
